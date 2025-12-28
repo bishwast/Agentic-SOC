@@ -1,0 +1,22 @@
+triage_task:
+  description: >
+    Review the following alert: {raw_alert}.
+    Extract the 'srcip', 'rule.id', and 'rule.description'.
+  expected_output: >
+    A summary containing the Source IP, Rule ID, and a brief description.
+  agent: triage_specialist
+
+research_task:
+  description: >
+    Using the summary from the Triage Specialist, determine the threat level. 
+    Map the 'rule.id' to potential MITRE ATT&CK tactics if possible.
+  agent: threat_researcher
+
+response_decision_task:
+  description: >
+    Based on the threat assessment, decide on the final action. 
+    If severity is High, the action must be 'BLOCK'.
+    Generate a final report including the decision and a justification.
+  expected_output: >
+    A final report ending with 'ACTION:[BLOCK/WATCH/IGNORE]'.
+  agent: incident_commander
