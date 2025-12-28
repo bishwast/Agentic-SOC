@@ -49,10 +49,10 @@ pip install crewai langchain_community litellm==1.80.11 openai==1.83.0
 ollama list  # Should show Llama3.2:latest
 ```
 Ollama Avive Status
-![Ollama Avive Status](/agentic_soc/documentaiton/images/ollama_active.png)
+![Ollama Avive Status](/documentation/images/ollama_active.png)
 
 Ollama List
-![Ollama List](/agentic_soc/documentaiton/images/ollama_list.png)
+![Ollama List](/documentaiton/images/ollama_list.png)
 
 ## 4. Usage
 
@@ -72,7 +72,7 @@ echo '{"timestamp":"2025-12-27T23:55:00.000+0000","rule":{"level":12,"descriptio
 # Expected Output:
 
 - Final Report: Threat Assessment Complete. Analysis indicates potential suspicious network activity... ACTION: BLOCK .
-![Final Result: ACTION: BLOCK](/agentic_soc/documentaiton/images/final_report.png)
+![Final Result: ACTION: BLOCK](/documentaiton/images/final_report.png)
 
 ### 5. Technical Achievements
 
@@ -85,4 +85,4 @@ echo '{"timestamp":"2025-12-27T23:55:00.000+0000","rule":{"level":12,"descriptio
 - Modular Orchestration: Decoupled agent logic into YAML configurations for scalable role and task management.
 
 #### For detail documentation refer to the PDF file below.
-![Detail Report](/agentic_soc/documentaiton/reports/Agentic%20Soc%20Model%20Documentation.pdf)
+![Detail Report](/documentaiton/reports/Agentic%20Soc%20Model%20Documentation.pdf)
