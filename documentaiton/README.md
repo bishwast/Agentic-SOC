@@ -49,9 +49,11 @@ pip install crewai langchain_community litellm==1.80.11 openai==1.83.0
 ollama list  # Should show Llama3.2:latest
 ```
 Ollama Avive Status
+
 ![Ollama Avive Status](/documentation/images/ollama_active.png)
 
 Ollama List
+
 ![Ollama List](/documentaiton/images/ollama_list.png)
 
 ## 4. Usage
