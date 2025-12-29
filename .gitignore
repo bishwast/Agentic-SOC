@@ -12,3 +12,8 @@ __pycache__/
 
 # System files
 .DS_Store
+
+# Ignore local systemd service files
+*.service
+# But allow the template
+!*.service.example

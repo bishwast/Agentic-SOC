@@ -1,5 +1,6 @@
 import yaml
 from crewai import Agent, Task, Crew, Process, LLM
+from firewall_tool import FirewallBlockTool
 
 class AgenticSocCrew:
     """
@@ -9,6 +10,9 @@ class AgenticSocCrew:
         # Loading the instruction manuals - YAML
         self.agents_config = self._load_yaml('config/agents.yaml')
         self.tasks_config = self._load_yaml('config/tasks.yaml')
+
+        # Instantiating the tool
+        self.firewall_tool = FirewallBlockTool()
 
         # Connect to local Ollama - Llama 3.2
         self.local_llm = LLM(
@@ -38,6 +42,7 @@ class AgenticSocCrew:
         commander = Agent(
             config=self.agents_config['incident_commander'],
             llm=self.local_llm,
+            tools=[self.firewall_tool],     # Assigining Block Tool
             verbose=True
         )
 
@@ -46,7 +51,8 @@ class AgenticSocCrew:
         triage_task= Task(
             config=self.tasks_config['triage_task'],
             agent=triage_specialist,
-            context_variables={'raw_alert': raw_alert_data}
+            inputs={'raw_alert': raw_alert_data}
+            #context_variables={'raw_alert': raw_alert_data}
         )
 
         decision_task = Task(
