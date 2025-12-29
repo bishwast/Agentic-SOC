@@ -62,9 +62,6 @@ The CrewAI orchestration layer utilized local Llama 3.2 inference via Ollama to 
 
     Logic: Evaluated risk vs. uptime. Since the source is unauthorized and targeting a root account on the NVIDIA DGX Spark, the risk of compromise exceeds the requirement for connectivity.
 
-    Final Decision: ACTION: BLOCK
-![SOC Output](/agentic_soc/soc_output.log)
-
 ## 4. Remediation & Mitigation
 The system autonomously generated and executed the following firewall rule to isolate the threat:
 
