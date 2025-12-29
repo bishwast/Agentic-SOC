@@ -91,3 +91,9 @@ SOC Incident Response Report is explained in detail below.
 
 #### For detail documentation refer to the PDF file below.
 ![Detail Report](/documentaiton/reports/Agentic%20Soc%20Model%20Documentation.pdf)
+
+#### Link to the Incident Respose Result:
+![Incident Respose Result](./documentaiton/insidence_response.md)
+
+#### Link to the Mitigation Implementation Report:
+![Mitigation Implementation Report](./documentaiton/mitigation_implementaion.md)
