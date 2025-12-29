@@ -85,3 +85,6 @@ The system autonomously generated and executed the following firewall rule to is
 - Data Breach: Prevented.
 
 - System Integrity: Maintained.
+
+# Screenshot Proof of work:
+![IRM](./images/final_report.png)
