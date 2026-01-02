@@ -17,3 +17,6 @@ __pycache__/
 *.service
 # But allow the template
 !*.service.example
+
+# API Keys never pushed to github
+.env
