@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import json
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
 from tools.ip_intel import AbuseIPDBTool
@@ -61,9 +62,36 @@ soc_crew = Crew(
     verbose=True
 )
 
-# 6. Proof of Work (The "Digital Paper Trail")
+# --- NEW: JSON LOGGING FOR DASHBOARD ---
+def log_to_dashboard(result, inputs):
+    json_file = "documentaiton/active_incidents.json"
+    
+    new_entry = {
+        "id": str(pd.Timestamp.now().timestamp()),
+        "timestamp": str(pd.Timestamp.now()),
+        "src_ip": inputs['src_ip'],
+        "status": "PENDING",
+        "ai_analysis": result
+    }
+    
+    # Read existing data
+    if os.path.exists(json_file):
+        with open(json_file, "r") as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = []
+    else:
+        data = []
+        
+    data.append(new_entry)
+    
+    with open(json_file, "w") as f:
+        json.dump(data, f, indent=4)
+
+# 6. Proof of Work (Markdown)
 def save_proof_of_work(result, inputs):
-    log_file = "validation_pow/agent_decisions.md"
+    log_file = "documentaiton/agent_decisions.md"
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     
     timestamp = pd.Timestamp.now()
@@ -77,15 +105,12 @@ def save_proof_of_work(result, inputs):
         f.write("\n---\n")
     
     print(f"\n[+] Success! Proposal logged to {log_file}")
+    
+    # CALL THE JSON LOGGER
+    log_to_dashboard(result, inputs)
 
 if __name__ == "__main__":
     print("### SOC Crew Initializing (Passive Mode) ###")
     inputs = {'src_ip' : '1.2.3.4'}
     result = soc_crew.kickoff(inputs=inputs)
-    
-    print("\n\n########################")
-    print("## PROPOSAL GENERATED ##")
-    print("########################\n")
-    print(result)
-    
     save_proof_of_work(result, inputs)
