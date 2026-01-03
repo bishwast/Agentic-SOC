@@ -1,99 +1,133 @@
 # Agentic SOC: Autonomous Incident Response on NVIDIA DGX
 
-This repository implements a fully **Autonomous Agentic SOC** (Phase 5) running on on-premise NVIDIA DGX infrastructure. The system utilizes a multi-agent AI architecture to ingest SIEM telemetry, perform threat reasoning, and execute response actions without human intervention.
+**An End-to-End Event-Driven Security Operations Center powered by Local AI.**
+
+This repository hosts a fully functional **Agentic SOC** that automates the detection, analysis, and response governance of security threats. Running entirely on-premise using an **NVIDIA DGX Spark**, it leverages **Wazuh** for telemetry, **Llama 3.2** for reasoning, and **Streamlit** for human-in-the-loop governance.
+
+---
 
 ## 1. Core Infrastructure
 
-The project is hosted on-premise to ensure data sovereignty and low-latency inference.
+The system operates on a decoupled, event-driven architecture designed for low latency and data sovereignty.
 
-| Component | Type | Function |
+| Layer | Component | Function |
 | :--- | :--- | :--- |
-| **NVIDIA DGX Spark** | Hardware | High-performance AARCH64/ARM64 platform for local LLM execution. |
-| **Wazuh** | SIEM/XDR | Endpoint telemetry collection and Level 10+ alert generation. |
-| **Ollama** | Inference | Local engine hosting **Llama 3.2** for privacy-compliant processing. |
-| **CrewAI** | Orchestration | Multi-agent role management and sequential task execution. |
-| **LangChain** | Middleware | Interface between agents and local Ollama API endpoints. |
+| **Hardware** | **NVIDIA DGX Spark** | High-performance ARM64 platform hosting local inference. |
+| **Sensor** | **Wazuh SIEM** | Detects raw threats (e.g., SSH Brute Force) and generates alerts. |
+| **Bridge** | **Python Watchdog** | Monitors logs in real-time, filters noise, and triggers the AI Crew. |
+| **Brain** | **CrewAI + Llama 3.2** | Orchestrates "Threat Researcher" and "Incident Commander" agents. |
+| **Console** | **Streamlit Dashboard** | Single Pane of Glass for analysts to review and approve blocks. |
 
-## 2. Agentic Framework & Logic
+---
 
-The system follows the **OODA Loop** (Observe, Orient, Decide, Act) to handle security incidents.
+## 2. Key Features
 
-### Agent Roles (Defined in `agents.yaml`)
-* **Triage Specialist**: Extracts security entities (Source IP, Usernames, Rule IDs) from raw JSON logs.
-* **Threat Researcher**: Cross-references entities against MITRE ATT&CK patterns to identify TTPs.
-* **Incident Commander**: Final decision-maker. Issues response actions (BLOCK, WATCH, IGNORE) based on threat severity.
+* **Real-Time Detection:** A custom "Nervous System" bridge (`wazuh_bridge.py`) watches SIEM logs and reacts instantly to high-severity threats.
+* **Autonomous Investigation:** Agents automatically query Threat Intelligence (AbuseIPDB) and correlate data without human input.
+* **Governance & Compliance:** No decision is "black box." A dedicated Governance Dashboard (`dashboard.py`) logs every AI decision for human approval (NIST 800-53 compliance).
+* **Adversary Emulation:** Validated against real-world attack techniques (MITRE ATT&CK T1110) using **Hydra**.
 
-### Technical Process Flow
-1.  **Ingestion**: A Python-based `File Watcher` monitors `/var/ossec/logs/alerts/alerts.json`.
-2.  **Filtering**: Pre-processing logic isolates High Severity alerts (Level ≥ 10).
-3.  **Reasoning**: CrewAI orchestrates sequential hand-offs between agents.
-4.  **Response**: The Commander generates a finalized JSON report containing the justification and mitigation action.
+---
 
-## 3. Installation & Setup
+## 3. The Agentic Workflow (OODA Loop)
+
+The system follows the **Observe, Orient, Decide, Act** loop:
+
+1.  **Observe:** Wazuh detects a brute force attack (Rule ID: 5716).
+2.  **Orient:** The **Threat Researcher Agent** enriches the Attacker IP using external intelligence.
+3.  **Decide:** The **Incident Commander Agent** evaluates the risk and proposes a mitigation (BLOCK/WATCH).
+4.  **Act:** The proposal is pushed to the **Analyst Dashboard** for final authorization.
+
+---
+
+## 4. Installation & Setup
 
 ### Prerequisites
-* **Architecture**: ARM64 / AARCH64 (NVIDIA DGX Spark).
-* **OS**: Ubuntu 24.04 LTS.
-* **Dependencies**: Ollama with Llama 3.2 installed.
+* **Hardware:** NVIDIA DGX / Jetson (ARM64) or Linux Server.
+* **OS:** Ubuntu 24.04 LTS.
+* **Dependencies:** Python 3.10+, Wazuh Agent/Manager, Ollama.
 
-### Environment Deployment
+### Deployment
 ```bash
-# 1. Create and activate virtual environment
+# 1. Clone & Setup Environment
+git clone [https://github.com/bishwast/Agentic-SOC.git](https://github.com/bishwast/Agentic-SOC.git)
+cd Agentic-SOC
 python3 -m venv venv
 source venv/bin/activate
 
-# 2. Install dependencies (Pinned versions for stability)
-pip install crewai langchain_community litellm==1.80.11 openai==1.83.0
+# 2. Install Dependencies
+pip install -r requirements.txt
+# (Ensures crewai, langchain, streamlit, and litellm are compatible)
 
-# 3. Verify Local Inference
-ollama list  # Should show Llama3.2:latest
+# 3. Start Local Inference Engine
+ollama run llama3.2
 ```
-Ollama Avive Status
-![Ollama Avive Status](/documentaiton/images/ollama_active.png)
 
-Ollama List
-![Ollama List](/documentaiton/images/ollama_list.png)
+---
 
-## 4. Usage and Validation
+## 5. Usage: Running the Full Pipeline
 
-### Execution
+To see the system in action, you will run three terminals to simulate the Defender, the Console, and the Attacker.
+Terminal 1: The Analyst Console (Frontend)
 
-The entry point must be executed via the virtual environment's binary to maintain root-level access to Wazuh logs while utilizing user-space dependencies.
+Launch the dashboard to view alerts in real-time.
 
-```bash
-sudo ./venv/bin/python3 main.py
 ```
-### Validating the Pipeline (Synthetic Stress Test)
-
-To verify the response logic without a live attacker, inject a synthetic Level 12 alert directly into the Wazuh log stream.
-
-```bash
-echo '{"timestamp":"2025-12-27T23:55:00.000+0000","rule":{"level":12,"description":"User admin logged in from unauthorized IP 192.168.10.254 - Possible Account Takeover","id":"100001"},"agent":{"id":"001","name":"dgx-node-01"},"manager":{"name":"wazuh-manager"},"id":"1735342200.12345","full_log":"Dec 27 23:55:00 dgx-node-01 sshd[1234]: Accepted password for admin from 192.168.10.254 port 54321 ssh2","decoder":{"name":"sshd"},"data":{"srcip":"192.168.10.254","dstuser":"admin"}}' | sudo tee -a /var/ossec/logs/alerts/alerts.json > /dev/null
+streamlit run dashboard.py
 ```
-# Expected Output:
+*Access the UI at http://localhost:8501*
 
-- Final Report: Threat Assessment Complete. Analysis indicates potential suspicious network activity... ACTION: BLOCK .
-![Final Result: ACTION: BLOCK](/documentaiton/images/final_report.png)
+**Terminal 2: The Bridge (Backend)**
 
-SOC Incident Response Report is explained in detail below.
+Start the listener. Note: Requires root to read Wazuh logs.
+Bash
 
-![SOC Incident Response Report](./documentaiton/active-defense.md)
+```sudo ./venv/bin/python3 wazuh_bridge.py```
 
-### 5. Technical Achievements
+**Terminal 3: The Adversary (Simulation)**
 
-- Environment Isolation: Implemented stable venv architecture to resolve circular dependency conflicts between crewai, litellm, and openai.
+Execute a Hydra attack (MITRE T1110) to trigger the system.
+Bash
 
-- Permission Bridging: Established targeted execution strategy allowing user-space Python agents to ingest root-protected SIEM logs.
 
-- Local Inference: Achieved low-latency, privacy-preserving reasoning using on-premise GPUs via Ollama.
+---
+## 6. Project Gallery & Evidence
 
-- Modular Orchestration: Decoupled agent logic into YAML configurations for scalable role and task management.
+    1. The Analyst Dashboard (Phase 9)
 
-#### For detail documentation refer to the PDF file below.
-![Detail Report](/documentaiton/reports/Agentic%20Soc%20Model%20Documentation.pdf)
+    The "Single Pane of Glass" showing pending AI investigations.
 
-#### Link to the Incident Respose Result:
-![Incident Respose Result](./documentaiton/insidence_response.md)
+![Single Pane of Glass](./documentaiton/images/phase9_dashboard_success.png)
 
-#### Link to the Mitigation Implementation Report:
-![Mitigation Implementation Report](./documentaiton/mitigation_implementaion.md)
+    2. Automated Detection Bridge (Phase 8)
+
+    Terminal output showing the system catching the Hydra attack instantly.
+
+![Automated Detection Bridge](./documentaiton/images/phase8_bridge_success.png)
+
+    3. AI Reasoning Logic (Phase 7)
+
+    Inside the "Brain": The Incident Commander deciding to block an IP.
+
+![AI Reasoning Logic](./documentaiton/images/phase7_finalresult.png)
+
+---
+
+## 7. Documentation & Artifacts
+
+    Full Incident Response Report: Detailed log of the AI's decision-making process.
+
+[Full Incident Response Report:](./documentaiton/reports/soc_output.log)
+
+    Detailed Technical PDF: Comprehensive project documentation.
+
+[Detailed Technical PDF](./documentaiton/reports/Agentic%20Soc%20Model%20Documentation.pdf)
+
+
+## 8. Technical Achievements
+
+- Environment Isolation: Solved complex circular dependencies between crewai and litellm on ARM64 architecture.
+
+- Permission Bridging: Created a secure bridge allowing user-space AI agents to ingest root-protected SIEM logs safely.
+
+- Local Inference: Achieved 100% data privacy by running Llama 3.2 locally on the NVIDIA DGX Spark.
