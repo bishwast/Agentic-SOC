@@ -1,0 +1,23 @@
+[
+    {
+        "id": "1767386283.012309",
+        "timestamp": "2026-01-02 20:38:03.012351",
+        "src_ip": "103.45.12.99",
+        "status": "PENDING",
+        "ai_analysis": "\n**Threat Intelligence Summary:**\n- **Source:** 103.45.12.99\n- **ISP:** China Unicom\n- **Abuse Score:** 100% (Critical)\n- **Reports:** 1,450+ in last 24 hours\n\n**Assessment:**\nThis IP is a known scanner targeting SSH ports. It has no legitimate business justification for accessing our network.\n\n**Recommendation:**\n**BLOCK** immediately at the perimeter firewall.\n    "
+    },
+    {
+        "id": "1767386369.416124",
+        "timestamp": "2026-01-02 20:39:29.416166",
+        "src_ip": "103.45.12.99",
+        "status": "PENDING",
+        "ai_analysis": "\n**Threat Intelligence Summary:**\n- **Source:** 103.45.12.99\n- **ISP:** China Unicom\n- **Abuse Score:** 100% (Critical)\n- **Reports:** 1,450+ in last 24 hours\n\n**Assessment:**\nThis IP is a known scanner targeting SSH ports. It has no legitimate business justification for accessing our network.\n\n**Recommendation:**\n**BLOCK** immediately at the perimeter firewall.\n    "
+    },
+    {
+        "id": "1767386678.807977",
+        "timestamp": "2026-01-02 20:44:38.808037",
+        "src_ip": "103.45.12.99",
+        "status": "PENDING",
+        "ai_analysis": "\n**Threat Intelligence Summary:**\n- **Source:** 103.45.12.99\n- **ISP:** China Unicom\n- **Abuse Score:** 100% (Critical)\n- **Reports:** 1,450+ in last 24 hours\n\n**Assessment:**\nThis IP is a known scanner targeting SSH ports. It has no legitimate business justification for accessing our network.\n\n**Recommendation:**\n**BLOCK** immediately at the perimeter firewall.\n    "
+    }
+]
