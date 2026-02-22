@@ -25,4 +25,4 @@ __pycache__/
 verify_dns.py
 
 # Ignore Azure SSH private keys
-*.pem
+*.pemsoc_service.log
