@@ -5,6 +5,30 @@ from pathlib import Path
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process, LLM  # FIXED: Added missing comma
 from tools.ip_intel import AbuseIPDBTool
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Define the log file path
+log_file = "soc_service.log"
+
+# Set up the handler: 50MB max per file, keep 5 backups
+handler = RotatingFileHandler(
+    log_file, 
+    maxBytes=50 * 1024 * 1024, 
+    backupCount=5
+)
+
+# Configure the logging format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[handler]
+)
+
+logger = logging.getLogger("AgenticSOC")
+logger.info("Log rotation is now active.")
+
+# ------------------------------------------------------------------------
 
 # --- PATH CONFIGURATION ---
 # This finds the directory where the script is currently running
