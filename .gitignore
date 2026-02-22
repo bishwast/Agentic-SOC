@@ -20,3 +20,9 @@ __pycache__/
 
 # API Keys never pushed to github
 .env
+
+# DNS Verification
+verify_dns.py
+
+# Ignore Azure SSH private keys
+*.pem

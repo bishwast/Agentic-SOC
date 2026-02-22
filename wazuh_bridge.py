@@ -5,9 +5,8 @@ import sys
 from main import soc_crew, save_proof_of_work
 
 # CONFIGURATION
-# Point to the REAL Wazuh Alert Log
 LOG_FILE_PATH = "/var/ossec/logs/alerts/alerts.json"
-SEVERITY_THRESHOLD = 5  # Lowered to 5 for testing (as SSH failures are usually Level 5-7)
+SEVERITY_THRESHOLD = 5 
 
 def follow(file):
     """Generator function that yields new lines in a file (like tail -f)."""
@@ -19,6 +18,25 @@ def follow(file):
             continue
         yield line
 
+def send_to_wazuh_manager(src_ip, decision):
+    """Writes a custom log entry that Wazuh Manager will ingest."""
+    wazuh_intel_log = "/var/ossec/logs/active-responses.log" # Standard path for custom events
+    
+    log_entry = {
+        "integration": "agentic_soc",
+        "attacker_ip": src_ip,
+        "ai_decision": str(decision), # Ensure decision is stringified
+        "alert_level": 12,
+        "description": f"AI SOC confirmed threat from {src_ip}. Mitigation proposed."
+    }
+    
+    try:
+        with open(wazuh_intel_log, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+        print(f"[+] SIEM INTEGRATION: AI verdict for {src_ip} forwarded to Wazuh.")
+    except Exception as e:
+        print(f"[!] SIEM ERROR: Failed to write to {wazuh_intel_log}: {e}")
+
 def process_alert(json_line):
     try:
         data = json.loads(json_line)
@@ -28,18 +46,23 @@ def process_alert(json_line):
         rule_desc = data.get('rule', {}).get('description', 'Unknown Alert')
         src_ip = data.get('data', {}).get('srcip')
         
-        # FILTER: Only trigger if it's an external IP (ignore internal/localhost if needed)
-        # For this test, we ALLOW everything to ensure the demo works.
         if rule_level >= SEVERITY_THRESHOLD and src_ip:
             print(f"\n[!] ALERT DETECTED (Level {rule_level})")
             print(f"    Rule: {rule_desc}")
             print(f"    Attacker IP: {src_ip}")
             
-            # Anti-Spam: Don't trigger on the same IP twice in 1 minute (Optional logic)
             print(">>> Triggering AI SOC Crew...")
             inputs = {'src_ip': src_ip}
+            
+            # Run the AI Investigation
             result = soc_crew.kickoff(inputs=inputs)
+            
+            # 1. Save locally for the Streamlit Dashboard
             save_proof_of_work(result, inputs)
+            
+            # 2. Forward the decision back to Wazuh SIEM
+            send_to_wazuh_manager(src_ip, result)
+            
             print(">>> Investigation Complete. Listening for new threats...\n")
             
     except json.JSONDecodeError:
@@ -48,9 +71,9 @@ def process_alert(json_line):
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    # Check for Root (Required to read Wazuh logs)
+    # Check for Root (Required to read/write Wazuh logs)
     if os.geteuid() != 0:
-        print("[!] PERMISSION ERROR: This script must be run as root/sudo to read Wazuh logs.")
+        print("[!] PERMISSION ERROR: This script must be run as root/sudo.")
         print("    Try: sudo env \"PATH=$PATH\" python3 wazuh_bridge.py")
         sys.exit(1)
 
