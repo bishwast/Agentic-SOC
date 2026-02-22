@@ -27,3 +27,4 @@ verify_dns.py
 # Ignore Azure SSH private keys
 *.pemsoc_service.log
 *.log*
+*.log*
