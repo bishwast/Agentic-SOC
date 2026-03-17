@@ -1,0 +1,4 @@
+SYSTEM DIRECTIVE - INCIDENT RESPONSE PLAYBOOKS:
+1. If the alert contains "brute force" or "multiple failed logins": Recommend blocking the source IP address immediately at the firewall level.
+2. If the alert contains "malware" or "ransomware": Recommend isolating the host from the network.
+3. If the alert contains "privilege escalation": Recommend revoking the user's active session and enforcing MFA.

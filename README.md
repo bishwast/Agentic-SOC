@@ -1,5 +1,26 @@
 ## 🛡️ Agentic SOC: AI-Driven Incident Response Pipeline
 
+## Recent Updates: Autonomous Triage API & RAG Integration
+This project has been upgraded to a microservice architecture using **FastAPI**. 
+
+* **API Gateway (`api.py`)**: Acts as a webhook receiver for Wazuh alerts. Utilizes Pydantic schemas to enforce strict JSON validation before processing.
+* **RAG Context (`context/playbooks.txt`)**: Implements Retrieval-Augmented Generation (RAG). Before an LLM analyzes an alert, the system retrieves organizational Incident Response playbooks to govern the AI's decision-making process and prevent hallucinations.
+* **Secure Configuration**: SIEM credentials and LLM endpoints are strictly managed via environment variables (`.env`).
+* **Audit Logging (`logger_config.py`)**: All API transactions and LLM context-loads are permanently recorded to local log files for SOC compliance.
+
+To view the interactive API documentation, run the server (`uvicorn api:app --reload`) and navigate to `http://127.0.0.1:8000/docs`.
+
+### System Demonstration
+
+**Interactive API Documentation (FastAPI/Swagger):**
+![API Endpoint](images/fastapi_swaggerUI.png)
+
+**Successful Triage Execution & RAG Context Injection:**
+![Execution Response](images/execution_response.png)
+
+**Audit Logging & Observability:**
+![Audit Trail](images/audit_trial.png)
+
 Built on NVIDIA DGX Spark | Llama 3.2 | Wazuh SIEM | CrewAI
 ### 🚀 The Mission
 
