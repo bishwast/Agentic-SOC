@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from logger_config import logger
 import os
+import asyncio
+import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -11,6 +13,9 @@ from fastapi.responses import JSONResponse
 
 load_dotenv()
 AI_TIMEOUT = 10
+
+# Global Dictionary
+processed_alerts = {}
 
 # 2. Structured logging configuration
 
@@ -48,52 +53,53 @@ def load_rag_context():
         return None
  
 
-# 6. The Route
+# 6. The Route - IDEMPOTENT
 
 @app.post("/api/v1/triage")
 async def triage_alert(alert: SecurityAlert):
-    # LOG START: Every request is logged for auditing.
-    logger.info(f"START: Triage alert for Alert ID: {alert.alert_id}")
+    # STEP A: THE CHECK (Idempotency Logic)
+    # Before we do anything, check if we already have seen this specific Alert ID
+
+    if alert.alert_id in processed_alerts:
+        logger.info(f"CACHE HIT: Alert {alert.alert_id} already processed. Retrieving saved result.")
+        return {
+            "status" : "success",
+            "action" : processed_alerts[alert.alert_id],
+            "note" : "cached_response"
+        }
+
+    logger.info(f"CACHE MISS: New Alert ID {alert.alert_id}. Starting AI Triage.")
 
     try:
-        # TIMEOUT LOGIC: Wrap the AI Call in a timer
-        response = await asyncio.wait_for(
-            call_llm_agent(alert), 
-            timeout=AI_TIMEOUT
-            )
+        # STEP B: THE EXECUTION
+        response = await asyncio.wait_for(call_llm_agent(alert), timeout=AI_TIMEOUT)
 
         if not response:
-            raise ValueError("LLM returned an empty response")
-            
-        logger.info(f"SUCCESS: AI Completed Triage for alert: {alert.alert_id}")
+            raise ValueError("Empty response from AI")
 
-        return {
-            "status": "success", 
-            "action": response
-            }
+        # STEP C: THE COMMIT - Saving to Memory
+        # We will save the cache IF the AI Succeeds.
+        processed_alerts[alert.alert_id] = response
 
-    except asyncio.TimeoutException:
-        logger.error(f"TIMEOUT: AI took longer than {AI_TIMEOUT} to respond for Alert ID {alert.alert_id}")
+        logger.info(f"SUCCESS: Result saved to cache for Alert {alert.alert_id}")
+        return {"status": "success", "action": response}
 
+    except asyncio.TimeoutError:
+        logger.error(f"TIMEOUT: Alert {alert.alert_id} failed.")
         return JSONResponse(
-            status_code=504,            # Gateway Timeout status code
-            content={
-                "status": "degraded",
-                "action": "MANUAL_REVIEW_REQUIRED", 
-                "reason": "AI_TIMEOUT"
-                }
+            status_code=504,
+            content={"status" : "error",
+                     "reason" : "AI_TIMEOUT"
+                    }
         )
-    
+
     except Exception as e:
-        # LOG FAILURE: 'logger.exception' records the full crash report internally.
-        logger.exception(f"CRITICAL FAILURE: Unexpected error on Alert {alert.alert_id}")
-
-        # GENERIC MESSAGE: To the user to keep the system secure - considering failure state
+        logger.exception(f"SYSTEM FAILURE: {alert.alert_id}")
         return JSONResponse(
-            status_code=500,            # Internal Server Error status code
+            status_code=500,
             content={
-                "status": "error", 
-                "action": "ESCALATE_TO_HUMAN", 
-                "reason": "INTERNAL_SYSTEM_FAILURE"
-                }
-        )
+                "status" : "error",
+                "reason" : "INTERNAL_FAILURE"
+            }
+        )  
+    
