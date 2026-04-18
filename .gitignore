@@ -28,3 +28,4 @@ verify_dns.py
 *.pemsoc_service.log
 *.log*
 *.log*
+.env
