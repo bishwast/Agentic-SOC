@@ -12,12 +12,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
-
+from crew_logic import run_soc_crew
 
 # 1. Setup and Persistence
 load_dotenv()
 STATE_FILE = "triage_state.json"
-AI_TIMEOUT = 10
+AI_TIMEOUT = 300    # 5 minutes
 
 def load_persistence():
     if os.path.exists(STATE_FILE):
@@ -50,42 +50,20 @@ class SecurityAlert(BaseModel):
 # Simulating LLM/CrewAI agent
 async def call_llm_agent(alert: SecurityAlert, context: str):
     """
-    PHASE 7: Real LLM Integration via Ollama on NVIDIA DGX.
-    This replaces the 'Simulated' if/else logic with neural reasoning.
+    CrewAI Logic: As CrewAI is synchronous, using to_thread to keep the API Responsive.
     """
     try:
-        # We tell the AI exactly how to behave
-        system_instruction = f"""
-        You are an Autonomous SOC Analyst. 
-        Your task is to triage security alerts using ONLY the provided playbooks.
-        
-        RULES:
-        1. If a playbook matches, state the ACTION clearly.
-        2. If no playbook matches, respond: 'ACTION: Manual Triage Required'.
-        3. Be concise. One sentence only.
-
-        OFFICIAL PLAYBOOKS:
-        {context}
-        """
-
-        user_input = f"ALERT ID: {alert.alert_id} | DESCRIPTION: {alert.description} | SOURCE: {alert.source_ip}"
-
-        # Using the model you already have: llama3.2
-        response = await asyncio.to_thread(
-            ollama.chat,
-            model='llama3.2', 
-            messages=[
-                {'role': 'system', 'content': system_instruction},
-                {'role': 'user', 'content': user_input},
-            ]
+        result = await asyncio.to_thread(
+            run_soc_crew,
+            alert.description,
+            context
         )
 
-        # Extract the text response from the Ollama object
-        return response['message']['content'].strip()
-
+        # Convert CrewAI's CrewOutput object to string. 
+        return str(result).strip()
     except Exception as e:
-        logger.error(f"Ollama Neural Error: {e}")
-        return "ACTION: Neural Engine Failure (Fallback to Manual)"
+        logger.error(f"CrewAI Error: {e}")
+        return "ACTION: CrewAI Orchestration Failure"
 
 
 def load_rag_context():

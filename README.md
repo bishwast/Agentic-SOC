@@ -1,3 +1,51 @@
+# Agentic-SOC: Autonomous Threat Triage on NVIDIA DGX
+
+An autonomous Security Operations Center (SOC) pipeline that uses **Multi-Agent Orchestration (CrewAI)** and **Local LLMs (Llama 3.2 via Ollama)** to automate the Triage and Active Response phase of incident handling.
+
+## 🚀 Key Features
+- **Multi-Agent Triage:** Uses a 'Senior SOC Analyst' for initial reasoning and a 'Security Auditor' to prevent false positives.
+- **On-Premise Privacy:** 100% of inference runs locally on NVIDIA DGX hardware; no data leaves the network.
+- **RAG-Driven Governance:** Agents are constrained by official company playbooks (context/playbooks.txt).
+- **Active Response:** Automatically enforces IP blocking and host isolation via a Python-based dispatch layer.
+- **High-Concurrency Resilience:** Stress-tested to handle concurrent brute-force bursts with a custom caching/idempotency layer.
+
+## 🛠️ Tech Stack
+- **Inference:** Llama 3.2 (Ollama)
+- **Framework:** CrewAI, LangChain, FastAPI
+- **Security:** RAG (Retrieval-Augmented Generation)
+- **Infrastructure:** NVIDIA DGX, Docker, Python 3.12
+<pre>
+graph TD
+    A[SIEM Alert] --> B{Cache Check}
+    B -- Hit --> C[Return Stored Action]
+    B -- Miss --> D[CrewAI: Specialist]
+    D --> E[RAG: Playbook Context]
+    E --> F[CrewAI: Auditor]
+    F --> G{Keyword Check}
+    G -- Match --> H[Firewall Log & Block]
+    G -- No Match --> I[Manual Review Flag]
+    H --> J[Return Response]
+    I --> J
+</pre>
+
+## 📊 Performance
+Validated via high-frequency stress testing (Hydra-style):
+- **Initial Triage:** ~20-30s (Dual-agent reasoning).
+- **Cached Response:** < 10ms (Idempotency layer).
+
+## 📊 Performance & Validation
+### High-Concurrency Stress Test
+During a Hydra-style brute-force simulation, the system processed 10 concurrent multi-agent triage requests.
+![Stress Test Launch](/images/stress_test_launch.png)
+*Figure 1: Successful 200 OK responses with variable latency proving cache effectiveness.*
+
+### Active Response Audit Trail
+The following log shows the autonomous enforcement layer triggering firewall blocks based on AI-reasoning.
+![Firewall Logs](/images/stress_test_firewallActions.png)
+*Figure 2: Verified IP blocking and host isolation entries in the audit trail.*
+
+---
+
 ## 🛡️ Agentic SOC: AI-Driven Incident Response Pipeline
 
 ## Recent Updates: Autonomous Triage API & RAG Integration
