@@ -1,13 +1,17 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from logger_config import logger
 import os
 import json
 import asyncio
 import logging
+import ollama
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from logger_config import logger
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+
+
 
 # 1. Setup and Persistence
 load_dotenv()
@@ -43,25 +47,61 @@ class SecurityAlert(BaseModel):
     source_ip: str
 
 # Simulating LLM/CrewAI agent
-async def call_llm_agent(alert: SecurityAlert):
-    await asyncio.sleep(2)
-    return "SUCCESS: Block Source IP At Firewall"
+async def call_llm_agent(alert: SecurityAlert, context: str):
+    """
+    PHASE 7: Real LLM Integration via Ollama on NVIDIA DGX.
+    This replaces the 'Simulated' if/else logic with neural reasoning.
+    """
+    try:
+        # We tell the AI exactly how to behave
+        system_instruction = f"""
+        You are an Autonomous SOC Analyst. 
+        Your task is to triage security alerts using ONLY the provided playbooks.
+        
+        RULES:
+        1. If a playbook matches, state the ACTION clearly.
+        2. If no playbook matches, respond: 'ACTION: Manual Triage Required'.
+        3. Be concise. One sentence only.
+
+        OFFICIAL PLAYBOOKS:
+        {context}
+        """
+
+        user_input = f"ALERT ID: {alert.alert_id} | DESCRIPTION: {alert.description} | SOURCE: {alert.source_ip}"
+
+        # Using the model you already have: llama3.2
+        response = await asyncio.to_thread(
+            ollama.chat,
+            model='llama3.2', 
+            messages=[
+                {'role': 'system', 'content': system_instruction},
+                {'role': 'user', 'content': user_input},
+            ]
+        )
+
+        # Extract the text response from the Ollama object
+        return response['message']['content'].strip()
+
+    except Exception as e:
+        logger.error(f"Ollama Neural Error: {e}")
+        return "ACTION: Neural Engine Failure (Fallback to Manual)"
 
 
 def load_rag_context():
     """Reads the local playbook to ground the LLM response."""
     try:
-        with open("context/playbooks.txt", "r") as file:
-            return file.read()
+        with open("context/playbooks.txt", "r") as f:
+            return f.read()
     except FileNotFoundError:
-        logger.error("RAG context file not found.")
-        return None
+        logger.warning("RAG context file missing. AI will rely on general knowledge.")
+        return "No specific playbook available."
  
 
 # 5. The Route - IDEMPOTENT
 
 @app.post("/api/v1/triage")
 async def triage_alert(alert: SecurityAlert):
+
     # STEP A: THE CHECK (Idempotency Logic) - Before we do anything, check if we already have seen this specific Alert ID
     if alert.alert_id in processed_alerts:
         logger.info(f"CACHE HIT: Alert {alert.alert_id} already processed. Retrieving saved result.")
@@ -74,8 +114,16 @@ async def triage_alert(alert: SecurityAlert):
     logger.info(f"CACHE MISS: New Alert ID {alert.alert_id}. Starting AI Triage.")
 
     try:
+
+        # 1. RETRIEVE: Fetch the Playbook Manual
+        playbook_content =  load_rag_context()
+
+        # 2. AUGMENT and GENERATE: Pass the manual and the alert to the AI
+        
         # STEP B: THE EXECUTION
-        response = await asyncio.wait_for(call_llm_agent(alert), timeout=AI_TIMEOUT)
+        response = await asyncio.wait_for(
+            call_llm_agent(alert, playbook_content), 
+            timeout=AI_TIMEOUT)
 
         if not response:
             raise ValueError("Empty response from AI")
@@ -101,7 +149,7 @@ async def triage_alert(alert: SecurityAlert):
         )
     
     except Exception as e:
-        logger.exception(f"TIMEOUT: Alert {alert.alert_id} failed.")
+        logger.exception(f"SYSTEM FAILURE: Alert {alert.alert_id} encountered an error.")
         return JSONResponse(
             status_code=500,
             content={

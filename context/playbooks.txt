@@ -1,4 +1,11 @@
-SYSTEM DIRECTIVE - INCIDENT RESPONSE PLAYBOOKS:
-1. If the alert contains "brute force" or "multiple failed logins": Recommend blocking the source IP address immediately at the firewall level.
-2. If the alert contains "malware" or "ransomware": Recommend isolating the host from the network.
-3. If the alert contains "privilege escalation": Recommend revoking the user's active session and enforcing MFA.
+[PLAYBOOK: BRUTE FORCE ATTACK]
+- Criteria: Multiple failed login attempts.
+- Action: Disable the user account and trigger a password reset.
+
+[PLAYBOOK: UNUSUAL GEOLOCATION]
+- Criteria: Login from a country not on the approved whitelist.
+- Action: Force Multi-Factor Authentication (MFA) challenge as per the Unusual Geolocation Playbook due to the brute force attempt.
+
+[PLAYBOOK: MALWARE DETECTION]
+- Criteria: Known malicious hash found on endpoint.
+- Action: Isolate the host from the network immediately.
