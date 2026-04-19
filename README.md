@@ -15,6 +15,8 @@ An autonomous Security Operations Center (SOC) pipeline that uses **Multi-Agent 
 - **Security:** RAG (Retrieval-Augmented Generation)
 - **Infrastructure:** NVIDIA DGX, Docker, Python 3.12
 
+## Security Workflow Diagram
+
 ```mermaid
 graph TD
     A[SIEM Alert] --> B{Cache Check}
