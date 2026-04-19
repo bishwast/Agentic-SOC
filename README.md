@@ -14,7 +14,8 @@ An autonomous Security Operations Center (SOC) pipeline that uses **Multi-Agent 
 - **Framework:** CrewAI, LangChain, FastAPI
 - **Security:** RAG (Retrieval-Augmented Generation)
 - **Infrastructure:** NVIDIA DGX, Docker, Python 3.12
-<pre>
+
+```mermaid
 graph TD
     A[SIEM Alert] --> B{Cache Check}
     B -- Hit --> C[Return Stored Action]
@@ -26,7 +27,19 @@ graph TD
     G -- No Match --> I[Manual Review Flag]
     H --> J[Return Response]
     I --> J
-</pre>
+
+    classDef input fill:#1f77b4,color:#fff,stroke:#0d3b66,stroke-width:2px;
+    classDef process fill:#2ca02c,color:#fff,stroke:#1b5e20,stroke-width:2px;
+    classDef decision fill:#ff7f0e,color:#fff,stroke:#b45309,stroke-width:2px;
+    classDef action fill:#d62728,color:#fff,stroke:#7f1d1d,stroke-width:2px;
+    classDef output fill:#9467bd,color:#fff,stroke:#4c1d95,stroke-width:2px;
+
+    class A input;
+    class B,G decision;
+    class C,D,E,F process;
+    class H,I action;
+    class J output;
+```
 
 ## 📊 Performance
 Validated via high-frequency stress testing (Hydra-style):
