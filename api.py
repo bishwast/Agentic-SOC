@@ -3,6 +3,7 @@ import json
 import asyncio
 import logging
 import ollama
+import subprocess
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -96,8 +97,40 @@ def load_rag_context():
         logger.warning("RAG context file missing. AI will rely on general knowledge.")
         return "No specific playbook available."
  
+# 5. The Response Manager
 
-# 5. The Route - IDEMPOTENT
+async def execute_active_response(alert_id: str, ai_action: str, ip:str):
+    """The Dispatcher: Translates AI Texts into System-Level actions."""
+    
+    action_log = "firewall_actions.log"
+    ai_action_lower = ai_action.lower()
+
+    try:
+        # STEP A: IP Blocking (Simulation/Local Firewall)
+        if "block" in ai_action_lower or "mfa" in ai_action_lower:
+            command = f"BLOCKING IP: {ip} for Alert {alert_id}"
+            logger.info(f"[*] ACTIVE RESPONSE: {command}")
+
+            with open(action_log, "a") as f:
+                f.write(f"[{alert_id}] {command} - Reason: {ai_action}\n")
+            return "SUCCESS: Firewall Rule Applied"
+        elif "isolate" in ai_action_lower:
+            command = f"ISOLATING HOST:{ip}"
+            logger.warning(f"[!] CRITICAL RESPONSE: {command}")
+
+            with open(action_log, "a") as f:
+                f.write(f"[{alert_id}] {command} - Reason: {ai_action}\n")
+            return "SUCCESS: Host Isolated from Segment"
+
+        # FALLBACK: When no high-confidence action detected
+        else:
+            logger.info(f"[!] RESPONSE: No automated action taken for Alert {alert_id}. Pending Manual Review.")
+            return "PENDING: Manual Review Required"
+    except Exception as e:
+        logger.error(f"Active Response Failed: {e}")
+        return "FAILURE: Response Execution Error"
+
+# 6. The Route - IDEMPOTENT
 
 @app.post("/api/v1/triage")
 async def triage_alert(alert: SecurityAlert):
@@ -115,29 +148,32 @@ async def triage_alert(alert: SecurityAlert):
 
     try:
 
-        # 1. RETRIEVE: Fetch the Playbook Manual
+        # STEP A. RETRIEVE and GENERATE (Ollama Call)
         playbook_content =  load_rag_context()
-
-        # 2. AUGMENT and GENERATE: Pass the manual and the alert to the AI
-        
-        # STEP B: THE EXECUTION
-        response = await asyncio.wait_for(
+        ai_response = await asyncio.wait_for(
             call_llm_agent(alert, playbook_content), 
             timeout=AI_TIMEOUT)
 
-        if not response:
-            raise ValueError("Empty response from AI")
+        # STEP B. EXECUTE: The New Active Response Phase
+        execution_status = await execute_active_response(
+            alert.alert_id,
+            ai_response,
+            alert.source_ip
+        )
 
         # STEP C: THE COMMIT - Save to RAM and Disk.
-        processed_alerts[alert.alert_id] = response
+        processed_alerts[alert.alert_id] = ai_response
         # Update the permanent record (Persistence)
         with open(STATE_FILE, "w") as f:
             json.dump(processed_alerts, f, indent=4)
 
         logger.info(f"SUCCESS: Result saved to cache for Alert {alert.alert_id}")
 
-        # STEP D: RETURN
-        return {"status": "success", "action": response}
+        # STEP D: RETURN (Include all execution status for the SIEM)
+        return {"status": "success", 
+                "action": ai_response,
+                "response_execution": execution_status
+                }
 
     except asyncio.TimeoutError:
         logger.error(f"TIMEOUT: Alert {alert.alert_id} failed.")
