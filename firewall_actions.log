@@ -1,2 +1,0 @@
-[RAG-LOGIN-001] BLOCKING IP: 45.33.22.11 for Alert RAG-LOGIN-001 - Reason: ACTION: Disable user account and trigger password reset due to [PLAYBOOK: BRUTE FORCE ATTACK] criteria, but also trigger MFA challenge as per [PLAYBOOK: UNUSUAL GEOLOCATION].
-[RAG-MALWARE-001] ISOLATING HOST:10.0.0.55 - Reason: ACTION: Isolate the host from the network immediately (from [PLAYBOOK: MALWARE DETECTION])

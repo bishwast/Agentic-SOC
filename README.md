@@ -1,3 +1,73 @@
+# Agentic SOC: Multi-Agent Autonomous Triage Engine
+
+An enterprise-grade, autonomous security orchestration system designed to perform high-fidelity alert triage using a multi-agent "Chain of Thought" architecture. This project leverages local Large Language Models (LLMs) and external threat intelligence to reduce SOC fatigue and mitigate False Positives.
+
+## 🚀 The Architecture
+This system operates on a **Decoupled Governance Model**, ensuring that no single AI agent has autonomous control without verification.
+
+1. **Ingestion Layer:** FastAPI provides a high-performance endpoint for SIEM alerts (Wazuh/Splunk).
+2. **Enrichment Engine:** Real-time data fetching from **AbuseIPDB** and **MITRE ATT&CK** mapping.
+3. **Orchestration (CrewAI):**
+   - **Senior SOC Analyst:** Performs forensic reasoning and evidence-based analysis.
+   - **Security Compliance Auditor:** Acts as a gatekeeper, assigning a **Confidence Score** and validating recommendations against security policies.
+4. **Local Inference:** Powered by **Ollama (Llama 3.2)** running on NVIDIA DGX hardware.
+
+## 🛡️ Security Hardening (OWASP LLM Top 10)
+This project is engineered to address critical vulnerabilities in Agentic AI:
+- **LLM01 (Prompt Injection):** Isolated reasoning layers prevent adversarial instructions in log payloads from overriding system prompts.
+- **LLM02 (Insecure Output Handling):** Mandatory structured reasoning traces ensure all decisions are cited and verifiable.
+- **LLM08 (Excessive Agency):** Implemented a **Human-in-the-Loop** confidence threshold; actions only trigger if the Auditor provides >90% confidence.
+
+## 🛠️ Tech Stack
+- **Framework:** FastAPI, CrewAI
+- **Brain:** Ollama (Llama 3.2 / Llama 4)
+- **Intelligence:** AbuseIPDB API, MITRE ATT&CK Framework
+- **Memory:** Local JSON Decision Journal (Stateful Tracking)
+- **Infrastructure:** NVIDIA DGX Spark (AARCH64)
+
+## 📊 Sample Output: Forensic Reasoning Trace
+```text
+Agent: Security Compliance Auditor
+Final Answer:
+CONFIDENCE: 95
+DECISION: BLOCK IP
+REASON: The Analyst provided a clear link between the source IP (AbuseIPDB: 95.23) 
+and MITRE T1059 (Command Interpreter). The risk of false positives is low 
+given the geolocation mismatch.
+
+## 📈 Performance & Validation (Evidence-Based)
+
+Based on real-world testing conducted on the **NVIDIA DGX Spark**, the system demonstrates a high degree of "Agentic Skepticism," successfully identifying and mitigating the risk of autonomous over-blocking.
+
+### **Inference & Latency Metrics**
+*Data captured during Phase 11.5 Triage of SSH Brute-Force Alert (ID: SOC-BF-001):*
+
+| Metric | Measured Value | Performance Note |
+| :--- | :--- | :--- |
+| **Total Triage Latency** | **~26 Seconds** | From ingestion to Auditor final sign-off. |
+| **Token Throughput** | **1,851 Tokens** | Combined prompt/completion tokens per triage session. |
+| **Model Load** | **Llama 3.2** | Optimized for low-latency local inference on DGX. |
+| **Resource Efficiency** | **High** | Successful local inference without reliance on external OpenAI APIs. |
+
+### **Validation Case Study: The "Range Block" Scenario**
+In our latest validation run, the system demonstrated successful **Conflict Resolution**:
+
+1. **Analyst Observation:** Detected a 95.23 AbuseIPDB score and mapped it to **MITRE T1059**. Recommended a hard **BLOCK**.
+2. **Auditor Intervention:** Identified that a blanket IP block could cause "unnecessary false positives" for legitimate users.
+3. **Governance Result:** The Auditor assigned a **Confidence Score of 60**, effectively halting autonomous execution.
+4. **Validation Conclusion:** The system correctly identified **LLM08 (Excessive Agency)** risk by refusing to automate a high-impact network change without more granular data (IP segmentation).
+
+### **Accuracy Benchmarking**
+The system is validated using the following logic:
+- **Analyst Accuracy:** Measured by correct mapping to MITRE T-codes (Current: T1059, T1021, T1210, T1017 verified).
+- **Auditor Governance:** Measured by the ability to lower confidence scores when business impact risks are detected (Current: Successful mitigation of aggressive blocking).
+
+![Validation_Img](/images/test_11.5.png)
+
+![Validation_Img1](/images/test_11.5_1.png)
+
+---
+
 # Agentic-SOC: Autonomous Threat Triage on NVIDIA DGX
 
 An autonomous Security Operations Center (SOC) pipeline that uses **Multi-Agent Orchestration (CrewAI)** and **Local LLMs (Llama 3.2 via Ollama)** to automate the Triage and Active Response phase of incident handling.

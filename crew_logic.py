@@ -1,46 +1,67 @@
 from crewai import Agent, Task, Crew, Process, LLM
+from tools.threat_intel import ThreatIntelProvider
+import os
 
-# Use the 'openai/' prefix to use the native driver
-local_llm = LLM(
-    model="openai/llama3.2",
-    base_url="http://localhost:11434/v1", # The /v1 is required for the OpenAI tunnel
-    api_key="ollama" # Placeholder for the mandatory field
-)
+# Initialize enrichment
+intel = ThreatIntelProvider()
 
-def run_soc_crew(alert_description, playbook_context):
-    triage_specialist = Agent(
+def run_agentic_triage(alert_data):
+    # 1. Native LLM Initialization
+    llm = LLM(
+        model="ollama/llama3.2",
+        base_url="http://localhost:11434"
+    )
+
+    # 2. Explainability Requirements
+
+    analyst = Agent(
         role='Senior SOC Analyst',
-        goal='Triage security alerts using local playbooks.',
-        backstory='Expert in threat intelligence.',
-        llm=local_llm, 
+        goal='Analyze security alerts and provide deep forensic reasoning trace.',
+        backstory= """Expert Teir-3 Analyst. You must always cite technical evidence.
+                    Contrxt: IP Reputation {ip_rep}, MITRE {mitre}""".format(
+                        ip_rep = intel.get_ip_reputation(alert_data.get('source_ip')),
+                        mitre = intel.get_mitre_context(alert_data.get('description'))
+                    ),
+        llm=llm,
         verbose=True
     )
 
-    security_auditor = Agent(
-        role='Security Auditor',
-        goal='Verify actions for safety and accuracy.',
-        backstory='Ensures zero false positives.',
-        llm=local_llm,
+    # 3. Security Auditor - with Governance (Confidence Scoring)
+
+    auditor = Agent(
+        role='Security Compliance Auditor',
+        goal='Assign a confidence score to the Analyst\'s recommendation.',
+        backstory="""You are the final gatekeeper. You ensure no 'Excessive Agency' (LLM08) occurs.
+                    If the Analyst's logic is weak, you must lower the confidence score.""",
+        llm=llm,
         verbose=True
     )
 
-    # (Rest of the tasks and crew remains the same)
+    # 4. TASK: The Reasoning Trace (Addressing LLM02)
+
     triage_task = Task(
-        description=f"Analyze alert: {alert_description}. Context: {playbook_context}",
-        expected_output="A single action recommendation (e.g., 'BLOCK IP').",
-        agent=triage_specialist
+        description=f"Perform a deep analysis of alert: {alert_data.get('description')}",
+        agent=analyst,
+        expected_output="""A report including:
+                        1. EVIDENCED FINDINGS: (Cite the AbuseIPDB score)
+                        2. TACTICAL MAPPING: (Cite the MITRE T-code)
+                        3. FINAL RECOMMENDATION: (BLOCK or ALLOW)"""
     )
 
+    # 5. TASK: The Governance Audit (Addressing LLM08)
     audit_task = Task(
-        description="Verify the action. Return only the final verified action string.",
-        expected_output="A verified action string.",
-        agent=security_auditor
+        description="Verify the analyst's report. Calculate a Confidence Score (0-100).",
+        agent=auditor,
+        expected_output="""Return exactly in this format:
+                        CONFIDENCE: [Score]
+                        DECISION: [Action]
+                        REASON: [Brief explanation]"""
     )
 
-    soc_crew = Crew(
-        agents=[triage_specialist, security_auditor],
-        tasks=[triage_task, audit_task],
+    crew = Crew(
+        agents=[analyst, auditor], 
+        tasks=[triage_task, audit_task], 
         process=Process.sequential
-    )
-
-    return soc_crew.kickoff()
+        )
+    
+    return crew.kickoff()
