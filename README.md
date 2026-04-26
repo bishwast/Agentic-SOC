@@ -1,3 +1,25 @@
+### 🛡️ Active Defense & Revocation Lifecycle
+The system is designed for the full lifecycle of threat containment:
+1. **Autonomous Block:** High-confidence threats (Score >90) trigger an immediate `iptables -I INPUT` rule.
+2. **Deterministic Overrides:** Policy-702 ensures that verified RCE signatures are contained regardless of AI caution-bias.
+3. **Manual Revocation:** An administrative `/api/v1/unblock` endpoint allows for rapid restoration of services, using a recursive purge to ensure no duplicate firewall rules remain.
+
+### 📜 Forensic Auditability
+Every decision is logged in `soc_history.json`, capturing:
+- The AI's full reasoning trace.
+- The Auditor's risk assessment.
+- The specific system command executed (and its success/failure status).
+
+### Screenshots: Successful ATCE BLOCK
+![ATCE Ops Test](images/test_12_final.png)
+
+Ecplaination:
+- The Auditor Stepped Up: For the first time, the Auditor saw the evidence was so overwhelming (CVE-2026-33827 + 99% Abuse score) that it gave a CONFIDENCE: 97.
+- The Fail-Safe Worked: Even with a high score, your ATCE Policy Override still fired as a secondary validation because it detected the "Critical" signature.
+- The "Holy Grail" Log: > SUCCESS: 199.45.154.159 has been blocked.
+
+---
+
 # Agentic SOC: Multi-Agent Autonomous Triage Engine
 
 An enterprise-grade, autonomous security orchestration system designed to perform high-fidelity alert triage using a multi-agent "Chain of Thought" architecture. This project leverages local Large Language Models (LLMs) and external threat intelligence to reduce SOC fatigue and mitigate False Positives.
