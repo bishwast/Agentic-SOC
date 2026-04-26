@@ -34,6 +34,7 @@ DECISION: BLOCK IP
 REASON: The Analyst provided a clear link between the source IP (AbuseIPDB: 95.23) 
 and MITRE T1059 (Command Interpreter). The risk of false positives is low 
 given the geolocation mismatch.
+```
 
 ## 📈 Performance & Validation (Evidence-Based)
 
