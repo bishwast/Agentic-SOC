@@ -5,6 +5,14 @@ logger = logging.getLogger("AgenticSOC.Response")
 
 class ResponseEngine:
     def __init__(self):
+        # --- THE CRITICAL INFRASTRUCTURE WHITELIST ---
+        # These IPs will NEVER be blocked, regardless of AI confidence.
+        self.whitelist = [
+            "127.0.0.1",     # Local loopback (Required for host DNS/Routing)
+            "127.0.0.53",    # systemd-resolved (Ubuntu DNS)
+            "172.17.0.1",    # Docker default bridge gateway
+            "0.0.0.0"        # Catch-all
+        ]
         # Threshold
         self.AUTO_BLOCK_THRESHOLD = 90
     
@@ -12,6 +20,12 @@ class ResponseEngine:
         """
         Determines and executes the appropriate security action based on confidence.
         """
+        # 1. THE GOVERNANCE CHECK (Run this FIRST)
+        if ip in self.whitelist:
+            logger.warning(f"🛡️ GOVERNANCE OVERRIDE: AI attempted to block critical infrastructure ({ip}). Action aborted.")
+            return "ABORTED_WHITELIST"
+
+        # 2. NORMAL EXECUTION (Only runs if IP is not whitelisted)
         if "BLOCK" in decision_text.upper() and confidence >= self.AUTO_BLOCK_THRESHOLD:
             return self._block_ip(ip)
         elif confidence >= 70:

@@ -1,3 +1,183 @@
+# 🛡️ Agentic SOC: Hybrid-LLM Autonomous Triage & Active Defense Engine
+
+![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+![Llama](https://img.shields.io/badge/Llama_3.2-Local_Inference-black?logo=meta)
+![OpenAI](https://img.shields.io/badge/GPT--4o-Cloud_Intel-412991?logo=openai)
+![FastAPI](https://img.shields.io/badge/FastAPI-Microservice-009688?logo=fastapi&logoColor=white)
+![CrewAI](https://img.shields.io/badge/CrewAI-Orchestration-FF4B4B)
+![Status](https://img.shields.io/badge/Status-Architecture_Complete-success)
+
+## 📖 The Mission: Overcoming Alert Fatigue
+Modern Security Operations Centers (SOCs) are overwhelmed by "alert fatigue." This project demonstrates an enterprise-grade SOAR (Security Orchestration, Automation, and Response) pipeline that drastically reduces the Mean Time to Detect (MTTD) and Respond (MTTR). 
+
+Instead of a human analyst manually checking IP reputations and writing reports, this system uses **Hybrid Agentic AI** to perform deep forensics in under 30 seconds. By moving the industry from passive monitoring to **Autonomous Remediation**, it handles the entire incident lifecycle using Multi-Agent AI Orchestration, bounded by deterministic code.
+
+---
+
+## 🏗️ Architecture & Decoupled Governance Model
+
+The framework operates on a strict **Decoupled Governance Model**, ensuring that no single AI agent has autonomous control over active network defenses without secondary verification. It follows the military OODA Loop:
+
+1. **Observe (Ingestion Layer):** A custom Python daemon extracts ephemeral attacker IPs from Docker honeypot logs via regex and streams them to a FastAPI webhook receiver.
+2. **Orient (Hybrid Inference):** - **Local Edge Privacy (Llama 3.2 via Ollama):** Internal SIEM logs and behavioral patterns are analyzed entirely locally, preventing sensitive infrastructure data from leaking.
+   - **Cloud Threat Intel (OpenAI GPT-4o API):** Complex signatures are escalated to the cloud for external enrichment via AbuseIPDB and custom CVE search tools.
+3. **Decide (Orchestration via CrewAI):**
+   - **Senior SOC Analyst (Local):** Performs forensic reasoning and calculates Aggression Scores.
+   - **Security Compliance Auditor (Cloud):** Acts as a gatekeeper, assigning a **Confidence Score** and validating recommendations against injected RAG playbooks.
+4. **Act (Active Response):** Automatically enforces IP blocking via a Python-based dispatch layer (`iptables`).
+
+### Security Workflow Diagram
+
+```mermaid
+graph TD
+    A[SIEM Alert] --> B{Cache Check}
+    B -- Hit --> C[Return Stored Action]
+    B -- Miss --> D[CrewAI: Specialist]
+    D --> E[RAG: Playbook Context]
+    E --> F[CrewAI: Auditor]
+    F --> G{Keyword Check}
+    G -- Match --> H[Firewall Log & Block]
+    G -- No Match --> I[Manual Review Flag]
+    H --> J[Return Response]
+    I --> J
+
+    classDef input fill:#1f77b4,color:#fff,stroke:#0d3b66,stroke-width:2px;
+    classDef process fill:#2ca02c,color:#fff,stroke:#1b5e20,stroke-width:2px;
+    classDef decision fill:#ff7f0e,color:#fff,stroke:#b45309,stroke-width:2px;
+    classDef action fill:#d62728,color:#fff,stroke:#7f1d1d,stroke-width:2px;
+    classDef output fill:#9467bd,color:#fff,stroke:#4c1d95,stroke-width:2px;
+
+    class A input;
+    class B,G decision;
+    class C,D,E,F process;
+    class H,I action;
+    class J output;
+```
+
+---
+
+## 🛡️ Security Hardening & Active Defense Lifecycle
+
+This project is meticulously engineered to address critical vulnerabilities in Agentic AI (OWASP LLM Top 10):
+- **LLM01 (Prompt Injection):** Isolated reasoning layers prevent adversarial instructions.
+- **LLM08 (Excessive Agency):** Implemented a **Human-in-the-Loop** confidence threshold; actions only trigger if the Auditor provides >90% confidence.
+
+### The Revocation Lifecycle
+1. **Autonomous Block:** High-confidence threats (Score >90) trigger an immediate `iptables -I INPUT` rule.
+2. **Deterministic Overrides (Self-DoS Prevention):** A hardcoded Python layer intercepts the AI's final actuation command, actively blocking the AI from dropping packets from critical infrastructure (e.g., `127.0.0.1`, `172.17.0.1`) regardless of AI caution-bias.
+3. **Manual Revocation:** An administrative `/api/v1/unblock` endpoint allows for rapid restoration of services.
+
+---
+
+## 🛠️ Tech Stack & Optimizations
+
+- **Compute & Infrastructure:** NVIDIA DGX Spark (AARCH64), Docker, Tailscale.
+- **Microservices & Backend:** Python 3.12, FastAPI, Uvicorn.
+- **AI Orchestration:** CrewAI, Local Inference (Ollama/Llama 3.2), Cloud Inference (OpenAI GPT-4o API), RAG.
+
+**Engineering Optimizations:**
+- **Asynchronous Idempotency Layer:** Achieved a 99% latency reduction (from ~30s to <10ms) for recurring threats.
+- **Log Management:** Implemented `RotatingFileHandler` to manage high-volume telemetry logs on ARM64 architecture, preventing disk exhaustion during brute-force bursts.
+
+---
+
+## 🎯 Execution Sequence (Proof of Concept)
+
+To witness the autonomous defense loop and the Hybrid GPT/Llama Governance Layer in action, execute the pipeline across four terminal sessions:
+
+**Terminal 1: Verify Infrastructure**
+```bash
+# Start the vulnerable Docker honeypot
+docker start victim_ssh
+```
+
+**Terminal 2: Initialize the Cognitive Backend**
+```bash
+# Export your OpenAI API Key for the Cloud Auditor Agent
+export OPENAI_API_KEY="sk-your-key-here"
+
+# Start the FastAPI/Uvicorn server hosting the CrewAI agents
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+**Terminal 3: Start the Telemetry Bridge**
+```bash
+# Begins streaming real-time attack data from Docker to the API
+python3 tests/bridge_script_test.py
+```
+
+**Terminal 4: Fire the Ephemeral Payload**
+```bash
+# Deploys a single-shot RCE payload from an ephemeral Docker IP
+./tests/single_shot_test.sh
+```
+
+### 🔍 Expected Output (from Validation Testing)
+Watch the Uvicorn terminal (Terminal 2). You will see the local Llama model analyze the burst, the Cloud GPT-4o model validate the CVE, and the final deterministic override protecting the host network:
+
+```text
+[CrewAI] Senior SOC Analyst (Local): Threat identified as SSH Brute Force.
+[CrewAI] Cyber Threat Intelligence (GPT-4o): CVE-2026-33827 detected.
+[CrewAI] Security Compliance Auditor (GPT-4o): CONFIDENCE 97. IMMEDIATE BLOCK APPROVED.
+[Governance Layer] WARNING - AI attempted to block critical infrastructure (172.17.0.1). Action aborted.
+```
+
+---
+
+## 📸 Visual Proof of Concept
+
+### 1. Hybrid LLM Orchestration & Conflict Resolution
+The system successfully navigated complex triage logic during the validation run using both Local and Cloud models. The Cloud Auditor saw overwhelming evidence and assigned a high confidence score, allowing the Fail-Safe to output the "Holy Grail" block log.
+
+![ATCE Ops Test Part 1](images/uvicorn_final_sst-1.png)
+![ATCE Ops Test Part 2](images/uvicorn_final_sst-2.png)
+
+### 2. High-Concurrency Stress Test
+During a Hydra-style brute-force simulation, the system processed 10 concurrent multi-agent triage requests.
+![Stress Test Launch](/images/stress_test_launch.png)
+
+### 3. Active Response Audit Trail (Firewall Execution)
+The autonomous enforcement layer triggering firewall blocks based on AI-reasoning.
+![Firewall Logs](/images/stress_test_firewallActions.png)
+
+### 4. Interactive API & Execution Response
+Strict Pydantic schemas enforce payload validation before kicking off the CrewAI agents.
+![API Endpoint](images/fastapi_swaggerUI.png)
+![Execution Response](images/execution_response.png)
+
+---
+
+## 🚀 Getting Started
+
+### 1. Hardware & Environment Prerequisites
+* Compute: Designed for ARM64 architecture (tested on NVIDIA DGX).
+* OS: Ubuntu 22.04+ (Linux Network Namespaces required for `iptables`).
+
+### 2. Installation
+```bash
+# Clone the repository
+git clone https://github.com/bishwast/Agentic-SOC.git
+cd Agentic-SOC
+
+# Set up the virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 3. SIEM & AI Configuration
+* **Ollama:** Install Ollama and pull the required model: `ollama pull llama3.2`
+* **API Keys:** Configure your `.env` file with your OpenAI API Key and AbuseIPDB credentials.
+
+### 4. Execution
+Run the main orchestrator to initialize the FastAPI backend and start the OODA loop:
+```bash
+uvicorn api:app --reload
+```
+---
 ### 🛡️ Active Defense & Revocation Lifecycle
 The system is designed for the full lifecycle of threat containment:
 1. **Autonomous Block:** High-confidence threats (Score >90) trigger an immediate `iptables -I INPUT` rule.

@@ -79,7 +79,7 @@ async def triage_alert(alert: AlertRequest):
     try:
         # Step A: Execute Agentic Forensic Reasoning
         # This calls your CrewAI logic (Analyst + Auditor)
-        result = run_agentic_triage(alert.dict())
+        result = run_agentic_triage(alert.model_dump())
         recommendation_text = str(result)
         
         # Step B: Logic Extraction via Regex
@@ -179,4 +179,4 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
     # Starting the server on the DGX local loopback
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

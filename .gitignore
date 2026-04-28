@@ -29,6 +29,7 @@ verify_dns.py
 *.log*
 *.log*
 .env
+*.json
 
 # Ignore local files
 jupyter_notes/
